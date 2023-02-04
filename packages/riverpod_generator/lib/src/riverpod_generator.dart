@@ -73,7 +73,7 @@ class RiverpodGenerator extends ParserGenerator<GlobalData, Data, Riverpod> {
       // functional providers have a "ref" has paramter, so families have at
       // least 2 parameters.
       isFamily: element.parameters.length > 1,
-      isAsync: _isBuildAsync(element),
+      valueType: _isBuildAsync(element),
       functionName: element.name,
       // Remove "ref" from the parameters
       parameters: element.parameters.skip(1).toList(),
@@ -83,9 +83,14 @@ class RiverpodGenerator extends ParserGenerator<GlobalData, Data, Riverpod> {
     );
   }
 
-  bool _isBuildAsync(FunctionTypedElement element) {
-    return element.returnType.isDartAsyncFutureOr ||
-        element.returnType.isDartAsyncFuture;
+  ValueType _isBuildAsync(FunctionTypedElement element) {
+    if (element.returnType.isDartAsyncFutureOr) {
+      return ValueType.futureOr;
+    } else if (element.returnType.isDartAsyncFuture) {
+      return ValueType.future;
+    }
+
+    return ValueType.value;
   }
 
   DartType _getUserModelType(ExecutableElement element) {
@@ -127,7 +132,7 @@ class RiverpodGenerator extends ParserGenerator<GlobalData, Data, Riverpod> {
       isScoped: buildMethod.isAbstract,
       // No "ref" on build, therefore any parameter = family
       isFamily: buildMethod.parameters.isNotEmpty,
-      isAsync: _isBuildAsync(buildMethod),
+      valueType: _isBuildAsync(buildMethod),
       parameters: buildMethod.parameters,
       valueDisplayType: _getUserModelType(buildMethod)
           .getDisplayString(withNullability: true),

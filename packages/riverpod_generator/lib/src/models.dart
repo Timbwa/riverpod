@@ -16,6 +16,12 @@ enum ProviderType {
   asyncNotifier,
 }
 
+enum ValueType {
+  future,
+  futureOr,
+  value,
+}
+
 const _defaultProviderNameSuffix = 'Provider';
 
 class Data {
@@ -23,7 +29,7 @@ class Data {
     required this.rawName,
     required this.functionName,
     required this.valueDisplayType,
-    required this.isAsync,
+    required this.valueType,
     required this.isScoped,
     required this.isFamily,
     required this.parameters,
@@ -38,7 +44,7 @@ class Data {
     required this.rawName,
     required this.notifierName,
     required this.valueDisplayType,
-    required this.isAsync,
+    required this.valueType,
     required this.isScoped,
     required this.isFamily,
     required this.parameters,
@@ -52,7 +58,7 @@ class Data {
   final ExecutableElement createElement;
   final AstNode createAst;
   final bool isScoped;
-  final bool isAsync;
+  final ValueType valueType;
   final bool isFamily;
   final String rawName;
   final String? functionName;
@@ -89,11 +95,20 @@ class Data {
   }
 
   String get exposedValueDisplayType {
-    return isAsync ? 'AsyncValue<$valueDisplayType>' : valueDisplayType;
+    return valueType != ValueType.value
+        ? 'AsyncValue<$valueDisplayType>'
+        : valueDisplayType;
   }
 
   String get buildValueDisplayType {
-    return isAsync ? 'FutureOr<$valueDisplayType>' : valueDisplayType;
+    switch (valueType) {
+      case ValueType.future:
+        return 'Future<$valueDisplayType>';
+      case ValueType.futureOr:
+        return 'FutureOr<$valueDisplayType>';
+      case ValueType.value:
+        return valueDisplayType;
+    }
   }
 
   late final String notifierBaseName =
@@ -220,13 +235,21 @@ class Data {
 
   ProviderType get providerType {
     if (isNotifier) {
-      if (isAsync) {
-        return ProviderType.asyncNotifier;
+      switch (valueType) {
+        case ValueType.future:
+        case ValueType.futureOr:
+          return ProviderType.asyncNotifier;
+        case ValueType.value:
+          return ProviderType.notifier;
       }
-      return ProviderType.notifier;
     } else {
-      if (isAsync) return ProviderType.futureProvider;
-      return ProviderType.provider;
+      switch (valueType) {
+        case ValueType.future:
+        case ValueType.futureOr:
+          return ProviderType.futureProvider;
+        case ValueType.value:
+          return ProviderType.provider;
+      }
     }
   }
 
